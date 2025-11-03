@@ -299,13 +299,13 @@
       popupCount++;
     }
 
-    // 调度祝福弹窗：移动端降低弹窗生成频率，减少卡顿
+    // 调度祝福弹窗：调整为0.3-0.8秒间隔（300-800毫秒）
     function startBlessingPopups() {
       updateContainerRect();
       function schedulePopup() {
         createBlessingPopup();
-        // 移动端延长间隔（100-200ms），降低性能消耗
-        const nextDelay = 100 + Math.random() * 100;
+        // 弹窗间隔：300ms（0.3秒）基础值 + 0-500ms随机值，总范围0.3-0.8秒
+        const nextDelay = 300 + Math.random() * 300;
         setTimeout(() => {
           requestAnimationFrame(schedulePopup);
         }, nextDelay);
