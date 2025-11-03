@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>祝福弹窗</title>
+  <!-- 引入Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- 配置Tailwind -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#EC4899',
+            accent: '#8B5CF6',
+            success: '#10B981',
+            warning: '#F59E0B',
+          }
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .popup-shadow {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      }
+      .float-animation {
+        animation: float 3s ease-in-out infinite;
+        will-change: transform;
+      }
+      @keyframes float {
+        0% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-10px) rotate(1deg); }
+        100% { transform: translateY(0px) rotate(0deg); }
+      }
+      .pop-in {
+        animation: popIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        will-change: transform, opacity;
+      }
+      @keyframes popIn {
+        0% { transform: scale(0); opacity: 0; }
+        70% { transform: scale(1.1); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .pop-out {
+        animation: popOut 0.3s ease-out forwards;
+        will-change: transform, opacity;
+      }
+      @keyframes popOut {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0); opacity: 0; }
+      }
+      /* 确认弹窗相关样式 */
+      .confirm-mask {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen overflow-hidden m-0 p-0">
+  <!-- 背景装饰 -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="absolute -top-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-20 w-60 h-60 bg-secondary/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-10 left-1/4 w-52 h-52 bg-accent/10 rounded-full blur-3xl"></div>
+  </div>
+  
+  <!-- 弹窗容器 -->
+  <div id="popupContainer" class="relative z-20 w-full h-screen overflow-hidden"></div>
+  
+  <script>
+    // 性能优化核心：限制最大弹窗数量，避免DOM节点过多
+    const MAX_POPUPS = 500;
+    const blessings = [
+  "愿你三冬暖，春不寒，天黑有灯，下雨有伞",
+  "祝你每一步都走在自己的热爱里",
+  "祝你遍历山河，觉得人间值得",
+  "愿你所得皆所愿，所行皆坦途",
+  "愿你被很多人爱，如果没有，愿你在寂寞中学会宽容",
+  "祝你每天醒来，阳光和梦想都在",
+  "愿你眼里有光，心中有爱，一路春暖花开",
+  "祝你所求皆如愿，所行化坦途，多喜乐，长安宁",
+  "愿你如星辰，明亮不落幕",
+  "祝你日子清净，抬头所见皆是温柔",
+  "愿你有前进一寸的勇气，亦有后退一尺的从容",
+  "祝你付出甘之如饴，所得归于欢喜",
+  "愿你被这个世界温柔以待，躲不过的惊吓都只是一场虚惊",
+  "祝你有能力爱自己，有余力爱别人",
+  "愿你一生努力，一生被爱，想要的都拥有，得不到的都释怀",
+  "祝你前程似锦，未来可期，不念过往，不畏将来",
+  "愿你活得烈马青葱，不为他人的目光所累",
+  "祝你在鸡零狗碎的生活里，找到属于自己的快乐",
+  "愿你历经千帆，归来仍是少年",
+  "祝你平安喜乐，万事胜意",
+  "愿你心中有丘壑，眼底存山河",
+  "祝你遍历人间，觉得未来可期",
+  "愿你有诗有梦，有坦荡荡的远方",
+  "祝你被时光温柔以待，每天都有小幸运",
+  "愿你笑靥如花，不负韶华",
+  "祝你生活明朗，万物可爱",
+  "愿你一生被爱，一生可爱",
+  "祝你风雨中像个大人，阳光下像个孩子",
+  "愿你眼中总有光芒，活成自己喜欢的模样",
+  "祝你所求皆所得，所盼皆所期",
+  "愿你如向日葵般，永远向阳而生",
+  "祝你岁月无忧，平安喜乐",
+  "愿你一生清澈明朗，做你愿意做的事，爱你愿意爱的人",
+  "祝你每天都有新的小确幸",
+  "愿你心有暖阳，何惧人生沧桑",
+  "祝你所有的努力都有回报，所有的等待都不被辜负",
+  "愿你走出半生，归来仍是少年",
+  "祝你被这个世界温柔以待，所有美好如期而至",
+  "愿你有足够的勇气，面对世界的不完美",
+  "祝你每一个平凡的日子，都闪着不平凡的光",
+  "愿你拥有发现美的眼睛，和感受温暖的心",
+  "祝你在平凡的生活里，有不平凡的惊喜",
+  "愿你保持热爱，奔赴山海",
+  "祝你生命中每一个重要时刻，都有人陪伴",
+  "愿你成为自己喜欢的样子，不抱怨，不将就，有自由，有光芒",
+  "祝你每一天都比前一天更快乐一点",
+  "愿你所遇皆良善，所行皆坦途",
+  "祝你拥有感知幸福的能力，微小事物也能带来大快乐",
+  "愿你披荆斩棘，终能得偿所愿",
+  "祝你在漫长岁月里，活得淋漓又通透",
+  "愿你三餐四季有温度，朝朝暮暮有欢喜",
+  "祝你在疲惫生活里，总有温柔可栖",
+  "愿你手捧星光不迷路，心藏热爱不荒芜",
+  "祝你每段旅程都有收获，每个当下都有快乐",
+  "愿你历经风雨仍有底气，看过世事仍存善意",
+  "祝你碗里有热汤，身边有陪伴，心中有向往",
+  "愿你平凡日子不平淡，简单生活有诗意",
+  "祝你能为小事雀跃，也能扛住生活考验",
+  "愿你眼中的风景，都藏着生活的深情",
+  "祝你脚步所至皆坦途，心中所想皆成真",
+  "愿你不慌不忙过日子，不急不躁享人生",
+  "祝你有软肋也有铠甲，能脆弱也能强大",
+  "愿你春有百花秋有月，夏有凉风冬有雪",
+  "祝你把生活过成诗，把日子过成画",
+  "愿你走过半生，依然对世界保持好奇与热爱"
+];
+    
+    const icons = [
+      "fa-heart", "fa-star", "fa-smile-o", "fa-gift", "fa-thumbs-up", 
+      "fa-moon-o", "fa-sun-o", "fa-leaf", "fa-coffee", "fa-music", 
+      "fa-book", "fa-paint-brush", "fa-heartbeat", "fa-star-o", 
+      "fa-trophy", "fa-bell", "fa-birthday-cake", "fa-flag", 
+      "fa-heart-o", "fa-diamond"
+    ];
+    
+    const colors = [
+      "bg-primary", "bg-secondary", "bg-accent", "bg-success", "bg-warning",
+      "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-green-500", "bg-yellow-500",
+      "bg-indigo-500", "bg-rose-500", "bg-teal-500", "bg-emerald-500", "bg-amber-500"
+    ];
+    
+    const container = document.getElementById('popupContainer');
+    let popupCount = 0;
+
+    // 创建确认弹窗（仅保留打开按钮）
+    function createConfirmPopup() {
+      const mask = document.createElement('div');
+      mask.className = 'confirm-mask fixed inset-0 z-50 flex items-center justify-center pop-in';
+      mask.id = 'confirmMask';
+
+      const confirmBox = document.createElement('div');
+      confirmBox.className = 'bg-white rounded-2xl p-8 w-full max-w-md popup-shadow flex flex-col items-center gap-6';
+      // 移除取消按钮，仅保留打开按钮，调整按钮宽度为100%
+      confirmBox.innerHTML = `
+        <div class="text-accent text-5xl">
+          <i class="fa fa-gift"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 text-center">收到一份礼物</h3>
+        <p class="text-gray-600 text-center">是否打开这份充满祝福的礼物？</p>
+        <div class="w-full mt-2">
+          <button id="openBtn" class="w-full py-3 px-4 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors">
+            打开
+          </button>
+        </div>
+      `;
+
+      mask.appendChild(confirmBox);
+      document.body.appendChild(mask);
+
+      // 打开按钮逻辑
+      document.getElementById('openBtn').addEventListener('click', () => {
+        mask.classList.add('pop-out');
+        setTimeout(() => {
+          document.body.removeChild(mask);
+          startBlessingPopups();
+        }, 300);
+      });
+    }
+
+    // 事件委托
+    container.addEventListener('click', (e) => {
+      const popup = e.target.closest('.absolute.p-5');
+      if (popup) {
+        removePopup(popup);
+      }
+    });
+
+    // 弹窗移除函数
+    function removePopup(popup) {
+      if (!popup) return;
+      popup.classList.remove('float-animation', 'pop-in');
+      popup.classList.add('pop-out');
+      setTimeout(() => {
+        if (container.contains(popup)) {
+          container.removeChild(popup);
+          popupCount--;
+        }
+      }, 300);
+    }
+
+    // 容器尺寸缓存
+    let containerRect = container.getBoundingClientRect();
+    function updateContainerRect() {
+      containerRect = container.getBoundingClientRect();
+    }
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(updateContainerRect, 100);
+    });
+
+    // 创建祝福弹窗
+    function createBlessingPopup() {
+      if (popupCount >= MAX_POPUPS) {
+        const oldestPopup = container.firstChild;
+        if (oldestPopup) removePopup(oldestPopup);
+      }
+      
+      const popup = document.createElement('div');
+      const blessing = blessings[Math.floor(Math.random() * blessings.length)];
+      const icon = icons[Math.floor(Math.random() * icons.length)];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      
+      const maxLeft = containerRect.width - 300;
+      const maxTop = containerRect.height - 150;
+      const left = Math.floor(Math.random() * maxLeft);
+      const top = Math.floor(Math.random() * maxTop);
+      
+      popup.className = `absolute p-5 rounded-xl popup-shadow pop-in float-animation cursor-pointer transition-all duration-300 hover:scale-105 ${color} text-white`;
+      popup.style.left = `${left}px`;
+      popup.style.top = `${top}px`;
+      popup.style.minWidth = '250px';
+      popup.style.maxWidth = '300px';
+      popup.style.zIndex = '10';
+      
+      popup.innerHTML = `
+        <div class="flex items-start gap-3">
+          <i class="fa ${icon} text-2xl mt-1"></i>
+          <div>
+            <p class="font-medium">${blessing}</p>
+            <div class="mt-3 flex justify-end">
+              <span class="text-xs opacity-80">${new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      container.appendChild(popup);
+      popupCount++;
+    }
+
+    // 调度祝福弹窗
+    function startBlessingPopups() {
+      updateContainerRect();
+      function schedulePopup() {
+        createBlessingPopup();
+        const nextDelay = 50 + Math.random() * 100;
+        setTimeout(() => {
+          requestAnimationFrame(schedulePopup);
+        }, nextDelay);
+      }
+      schedulePopup();
+    }
+
+    // 初始化：显示确认弹窗
+    createConfirmPopup();
+  </script>
+</body>
+</html>
