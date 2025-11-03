@@ -75,6 +75,13 @@
   
   <!-- 弹窗容器 -->
   <div id="popupContainer" class="relative z-20 w-full h-screen overflow-hidden"></div>
+
+  <!-- 新增：音频元素（默认隐藏，点击后播放） -->
+  <audio id="blessingAudio" hidden preload="auto">
+    <!-- 替换src为你的MP3文件路径（支持本地文件或在线链接） -->
+    <source src="https://lx-sycdn.kuwo.cn/2936156b4517efbe8360fe4bd3bd9186/69085d17/resource/n2/74/48/974319662.mp3?bitrate$128&from=vip" type="audio/mpeg">
+    您的浏览器不支持音频播放，请更新浏览器版本。
+  </audio>
   
   <script>
     // 性能优化核心：限制最大弹窗数量，避免DOM节点过多
@@ -163,8 +170,10 @@
     
     const container = document.getElementById('popupContainer');
     let popupCount = 0;
+    // 新增：获取音频元素
+    const blessingAudio = document.getElementById('blessingAudio');
 
-    // 创建确认弹窗（仅保留打开按钮）
+    // 创建确认弹窗（仅保留打开按钮，点击后播放音频）
     function createConfirmPopup() {
       const mask = document.createElement('div');
       mask.className = 'confirm-mask fixed inset-0 z-50 flex items-center justify-center pop-in';
@@ -172,7 +181,6 @@
 
       const confirmBox = document.createElement('div');
       confirmBox.className = 'bg-white rounded-2xl p-8 w-full max-w-md popup-shadow flex flex-col items-center gap-6';
-      // 移除取消按钮，仅保留打开按钮，调整按钮宽度为100%
       confirmBox.innerHTML = `
         <div class="text-accent text-5xl">
           <i class="fa fa-gift"></i>
@@ -189,14 +197,27 @@
       mask.appendChild(confirmBox);
       document.body.appendChild(mask);
 
-      // 打开按钮逻辑
+      // 核心修改：点击打开按钮时，先播放音频，再启动祝福弹窗
       document.getElementById('openBtn').addEventListener('click', () => {
+        // 播放音频（处理浏览器自动播放政策，用户交互后播放符合要求）
+        blessingAudio.play().catch(error => {
+          console.log('音频播放失败：', error);
+          // 即使音频播放失败，仍继续显示祝福弹窗（避免功能阻塞）
+          hideConfirmAndStartPopups();
+        });
+
+        // 音频播放成功后，隐藏确认弹窗并启动祝福弹窗
+        hideConfirmAndStartPopups();
+      });
+
+      // 封装：隐藏确认弹窗+启动祝福弹窗的通用逻辑
+      function hideConfirmAndStartPopups() {
         mask.classList.add('pop-out');
         setTimeout(() => {
           document.body.removeChild(mask);
           startBlessingPopups();
         }, 300);
-      });
+      }
     }
 
     // 事件委托
